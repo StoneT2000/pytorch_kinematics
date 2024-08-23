@@ -35,7 +35,7 @@ def test_jacobian_follower():
     urdf = "/home/stao/.maniskill/data/robots/widowx/wx250s.urdf"
     search_path = pybullet_data.getDataPath()
     full_urdf = os.path.join(search_path, urdf)
-    chain = pk.build_serial_chain_from_urdf(open(full_urdf, mode="rb").read(), "fingers_link")
+    chain = pk.build_serial_chain_from_urdf(open(full_urdf, mode="rb").read(), "ee_gripper_link")
     chain = chain.to(device=device)
 
     # robot frame
