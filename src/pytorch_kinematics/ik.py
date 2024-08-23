@@ -205,6 +205,9 @@ class InverseKinematics:
         # could give a batch of initial configs
         self.num_retries = self.initial_config.shape[-2]
 
+
+        self.active_ancestor_joint_idxs = torch.tensor([0, 1, 2, 3, 4, 5], device=self.device)
+
     def clear(self):
         self.err = None
         self.err_all = None
@@ -291,7 +294,7 @@ class PseudoInverseIK(InverseKinematics):
         # convert target rot to desired rotation about x,y,z
         target_wxyz = rotation_conversions.matrix_to_quaternion(target[:, :3, :3])
 
-        sol = IKSolution(self.dof, M, self.num_retries, self.pos_tolerance, self.rot_tolerance, device=self.device)
+        sol = IKSolution(len(self.active_ancestor_joint_idxs), M, self.num_retries, self.pos_tolerance, self.rot_tolerance, device=self.device)
 
         q = self.initial_config
         if q.numel() == M * self.dof * self.num_retries:
@@ -308,7 +311,7 @@ class PseudoInverseIK(InverseKinematics):
         if self.debug:
             pos_errors = []
             rot_errors = []
-
+        # q = q[..., self.active_ancestor_joint_idxs]
         optimizer = None
         if inspect.isclass(self.optimizer_method) and issubclass(self.optimizer_method, torch.optim.Optimizer):
             q.requires_grad = True
@@ -321,6 +324,7 @@ class PseudoInverseIK(InverseKinematics):
                 sol.iterations += 1
                 # compute forward kinematics
                 # N x 6 x DOF
+                q = q[..., self.active_ancestor_joint_idxs]
                 J, m = self.chain.jacobian(q, ret_eef_pose=True)
                 # unflatten to broadcast with goal
                 m = m.view(-1, self.num_retries, 4, 4)
